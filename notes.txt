@@ -1,0 +1,157 @@
+INTRODUCTION TO AUTHENTICATION - 9/1/20
+
+AUTHENTICATION
+    -- complex and important
+    -- neverending race
+    -- huge topic
+
+AUTHENTICATION !== AUTHORIZATION
+
+AUTHENTICATION (AuthN) = who are you?
+    -- server verifies identity of client
+
+AUTHORIZATION (AuthZ) = what do you want?
+    -- server determines the level of access a client has to a resource
+
+Really difficult to build AuthN and AuthZ services
+    -- lots of devs go with third party services
+        -- sign in with google, etc
+        -- called OAuth
+
+CORE PRINCIPLES - BUILDING AUTH SERVICE
+    -- 1 -- Require strong passwords from the user
+        -- have minimum requirements
+        -- don't go crazy with it
+
+    -- 2 -- Properly store passwords in the database
+        -- NEVER STORE PASSWORDS OR SENSITIVE INFO AS PLAIN TEXT IN THE DATABASE
+        -- don't use plain text
+        -- to keep passwords safe, in case people use the same password for every site
+        -- if hackers access a password in one database, they can use it to hack into bank accounts, online accounts, etc
+
+        -- we could encrypt it
+            -- PROBLEM: encryption is reversible if you have the key
+                -- if hacked, hackers can unencrypt passwords
+        
+        -- we need a nonreversible method
+        -- so we hash passwords
+        -- cryptographic hashing
+            -- makes passwords unreadable
+
+            -- produces a hash
+                -- a fixed length string
+
+            -- produces the same result every time when given the same input
+
+            -- a hash is like a fingerprint for a piece of data
+            
+            -- IRREVERSIBLE - can't use hash to find input
+
+            -- can create a hash from any data type
+
+            -- no matter the size of the data, the hash output will always be the same length
+                -- length is determined by the algorithm
+
+        -- WE STORE PASSWORDS WITH CRYPTOGRAPHIC HASHING
+        
+        -- There is still a threat though
+            -- brute-forcing
+
+    -- 3 -- Prevent brute-force attacks against the database
+        -- brute-forcing = hacker going to the login page and trying to guess the user's password
+
+        -- they do this with automated programs
+
+        -- hackers create RAINBOW TABLES
+            -- tables containing every possible password with the corresponding hashes (made with the same algorithm and length)
+
+        -- to prevent RAINBOW TABLES
+            -- we can intentionally slow down our hashing functions
+            -- intentially slow down the code
+
+            -- we could use a longer hashing algorithm
+
+            -- we could use a time complexity
+                -- it loops over the code for a certain amount of time
+                -- it hashes the password, then the hash, then that hash, then that hash, etc
+                -- hashes the hashes over and over again
+
+                -- create a time complexity by hashing over and over again until it takes too long to generate a rainbow table
+
+                -- even if it only takes 1 or 2 seconds to generate a hash, this can push RAINBOW TABLE generation time from a few days to a few years
+
+                -- EX)
+                    -- 100,000,000 hashes at 2 milliseconds each = approx 55 hours
+                    -- 100,000,000 hashes at 2 seconds per hash = approx 6 years
+
+                -- time complexities mean hackers will move on to a different target
+
+            -- MD5 is a basic hashing algorithm
+                -- but it has collisions
+                -- collisions = same hash for different inputs
+                -- MD5 is insecure
+                -- not good for passwords
+                -- it's pretty old
+
+            -- There are a bunch of hashing algorithms
+
+BCRYPT
+    -- newer hashing algorithm
+    -- good for passwords
+
+    -- built-in time complexity
+    -- automatic salting = adding random string to password before hashing
+
+ARGON2
+    -- newer than bcrypt
+    -- good password hashing algorithm
+
+HOWEVER WE WILL USE bcryptjs\
+
+HASH THE PASSWORD BEFORE SENDING TO DATABASE ON USER CREATION
+
+HASH THE PASSWORD WITH SAME ALGORITHM AND TIME CONTSTRAINT WHEN A USER LOGS IN TO SEE IF THE HASHES ARE THE SAME
+
+TO PROTECT ENDPOINTS, WRITE SOME MIDDLEWARE THAT CHECKS FOR VALID USERNAME AND PASSWORD, AND USE IT ON THE RESTRICTED ENDPOINTS
+
+WE DON'T WANT THE TIME COMPLEXITY TO SHOW UP EVERYTIME WE ACCESS AN ENDPOINT
+
+WE DON'T WANT TO HAVE TO RE-AUTHENTICATE EACH TIME WE GO TO A DIFFERENT ENDPOINT
+
+WE CAN USE SESSIONS TO DO THAT
+    -- IT'S LIKE A HAND STAMP OR WRISTBAND
+
+SESSIONS AUTHENTICATION WORKFLOW:
+    -- clinet sends credentials
+    -- server creates session and sends id to client as a cookie
+    -- clieent stores teh id locally in the cookie jar
+    -- client includes id when calling protected routes from the cookie jar
+    -- server verifies session and provides or denies access
+
+WE CAN USE A LIBRARY (EXPRESS-SESSION) TO HANDLE THE SESSIONS FOR US
+    -- it handles the whole workflow for us
+    -- it's middleware
+
+IT'S USING COOKIES TO SEND THE SESSION INFO BACK AND FORTH BETWEEN CLIENT AND SERVER
+
+COOKIES ARE FOR DATA PERSISTENCE IN SMALL CHUNKS
+
+EXPRESS-SESSION DOES A LOT FOR US BEHIND THE SCENES
+
+INSOMNIA WILL AUTOMATICALLY SEND ALL COOKIES RELATED TO LOCALHOST WHEN WE TRY TO ACCESS LOCALHOST ENDPOINTS
+
+SESSIONS HAVE TO BE STORED SOMEWHERE
+    -- CURRENTLY, THEY ARE ALL STORED IN THE MEMORY
+        -- THAT'S DELETED EVERYTIME THE SERVER RESTARTS
+        -- IT'S NON PERSISTENT
+
+    -- WE CAN STORE OUR SESSION DATA IN THE DATABASE
+        -- WE COULD DO THIS MANUALLY
+        -- WE'RE JUST GONNA USE A LIBRARY (CONNECT-SESSION-KNEX)
+            -- PLUG-IN FOR EXPRESS-SESSION
+
+LOGGING OUT:
+    -- easy with express-session
+    -- database deletes session
+    -- client doesn't have to delete cookie
+    -- cookie won't work because it has an invalid session id
